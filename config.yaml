@@ -4,50 +4,43 @@
 # =============================================================================
 
 global:
-  # Vinted runs a SEPARATE SITE PER COUNTRY. The bot searches every domain
-  # listed here and tags each result with which one it came from, so you only
-  # see listings from places you can actually order from.
+  # Only Slovakia — cross-border shipping availability varies by country, and
+  # what you can actually order into Slovakia isn't the same as what a Polish
+  # or Czech buyer can. Rather than guess at that, this only searches the site
+  # you can order from directly. Add other domains back if that changes.
   domains:
     - name: "Slovakia"
       base_url: "https://www.vinted.sk"
-    - name: "Czech Republic"
-      base_url: "https://www.vinted.cz"
-    - name: "Poland"
-      base_url: "https://www.vinted.pl"
 
   delay_between_queries_sec: 5
   delay_between_domains_sec: 3
-  # How many of the newest listings to pull per query, per domain, per run
   items_per_query: 40
-  # Rolling price history window used to judge what a "steal" looks like.
-  # Kept SEPARATE per country (different currencies), so an item is only ever
-  # compared against recent listings from the same domain.
   price_history_window: 50
 
-# Each entry below is one independent search + its own steal-detection rules.
-# It runs across ALL domains listed above automatically.
+# One search per set/ETB you're hunting restocks for. Add more sets below the
+# same way as new ones release — copy a block, change search_text and name.
 searches:
 
-  - name: "Charizard PSA 10"
+  - name: "Destined Rivals ETB"
     params:
-      search_text: "charizard psa 10"
-      catalog_ids: "2971"     # Trading cards catalog id — same across Vinted domains
+      search_text: "destined rivals"
+      catalog_ids: "2971"     # Trading cards catalog id
       order: "newest_first"
     rules:
-      # A listing only alerts if BOTH of these are true:
-      min_pct_below_average: 30   # must be at least 30% cheaper than recent average
-      must_beat_recent_low: true  # AND must undercut the single cheapest recent listing
-      min_history_size: 5         # need at least this many past prices before judging
-      # Nothing below is applied unless you explicitly set it — no keyword or
-      # low-price filtering by default. Judging "fake" or "mispriced" is on you.
+      min_pct_below_average: 30
+      must_beat_recent_low: true
+      min_history_size: 5
       max_price: null
       min_price: null
-      include_keywords: []
-      exclude_keywords: []
+      # Sealed-only filter: must mention one of these product terms...
+      include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
+                          "zapečatené", "neotvorené", "booster bundle"]
+      # ...and must NOT look like a loose single card or already-opened box.
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
-  - name: "Booster Box Sealed"
+  - name: "Prismatic Evolutions ETB"
     params:
-      search_text: "pokemon booster box sealed"
+      search_text: "prismatic evolutions"
       catalog_ids: "2971"
       order: "newest_first"
     rules:
@@ -56,22 +49,26 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
-      include_keywords: []
-      exclude_keywords: []
+      include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
+                          "zapečatené", "neotvorené", "booster bundle"]
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
-  - name: "Base Set Cards"
+  - name: "Ascended Heroes ETB"
     params:
-      search_text: "pokemon base set 1999"
+      # "Ascended Heroes" is the actual set name (Mega Evolution—Ascended Heroes,
+      # released Feb 2026) — adjust here if you meant a different set.
+      search_text: "ascended heroes"
       catalog_ids: "2971"
       order: "newest_first"
     rules:
-      min_pct_below_average: 35   # rarer/wider price spread, so a bigger gap needed
+      min_pct_below_average: 30
       must_beat_recent_low: true
       min_history_size: 5
       max_price: null
       min_price: null
-      include_keywords: []
-      exclude_keywords: []
+      include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
+                          "zapečatené", "neotvorené", "booster bundle"]
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
 discord:
   webhook_url_env_var: "DISCORD_WEBHOOK_URL"
