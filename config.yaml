@@ -4,49 +4,60 @@
 # =============================================================================
 
 global:
-  # Vinted domain to search (change per country: vinted.fr, vinted.de, vinted.co.uk, etc.)
-  base_url: "https://www.vinted.fr"
-  # Seconds to wait between each search query below (be polite, avoid bot-detection)
+  # Vinted runs a SEPARATE SITE PER COUNTRY. The bot searches every domain
+  # listed here and tags each result with which one it came from, so you only
+  # see listings from places you can actually order from.
+  domains:
+    - name: "Slovakia"
+      base_url: "https://www.vinted.sk"
+    - name: "Czech Republic"
+      base_url: "https://www.vinted.cz"
+    - name: "Poland"
+      base_url: "https://www.vinted.pl"
+
+  # Seconds to wait between each search query (be polite, avoid bot-detection)
   delay_between_queries_sec: 5
-  # How many of the newest listings to pull per query, per run
+  # Extra pause when switching from one country's domain to the next
+  delay_between_domains_sec: 3
+  # How many of the newest listings to pull per query, per domain, per run
   items_per_query: 40
   # Rolling price history window used for the "self-learning" average-price rule.
-  # The bot remembers the last N prices it has seen per search and flags listings
-  # that undercut that recent average — so "good deal" adapts automatically as
-  # the market moves, without you having to update numbers every month.
+  # Kept SEPARATE per country (prices/currencies differ), so a search's average
+  # is only ever compared against other listings from the same domain.
   price_history_window: 50
 
 # Each entry below is one independent search + its own deal-scoring rules.
-# Add/remove/edit entries freely — this is the "customizable" part.
+# It runs across ALL domains listed above automatically — you don't repeat
+# it per country. Add/remove/edit entries freely.
 searches:
 
   - name: "Charizard PSA 10"
-    # Vinted catalog search params (mirrors what you'd type into vinted.fr search box)
+    # Vinted catalog search params (mirrors what you'd type into the site's search box).
+    # Do NOT set "currency" here — each domain reports prices in its own native
+    # currency (EUR for SK, CZK for CZ, PLN for PL) and the bot handles that per item.
     params:
       search_text: "charizard psa 10"
-      catalog_ids: "2971"     # Trading cards catalog id on Vinted FR — adjust if needed
+      catalog_ids: "2971"     # Trading cards catalog id — same across Vinted domains
       order: "newest_first"
-      currency: "EUR"
     rules:
-      max_price: 400                # hard ceiling — never alert above this
-      min_price: 20                 # ignore obvious mispriced/scam-low listings
-      below_rolling_average_pct: 15 # alert if price is >=15% below recent average for this search
-      include_keywords: ["psa 10"]  # title/description must contain at least one (case-insensitive)
+      max_price: 400                # in the local currency of whichever domain matched
+      min_price: 20
+      below_rolling_average_pct: 15 # alert if price is >=15% below recent average for this search+domain
+      include_keywords: ["psa 10"]
       exclude_keywords: ["proxy", "custom", "fake", "reprint", "case only", "empty"]
       min_score_to_alert: 60        # 0-100, see README for how score is computed
 
   - name: "Booster Box Sealed"
     params:
-      search_text: "pokemon booster box scellé"
+      search_text: "pokemon booster box sealed"
       catalog_ids: "2971"
       order: "newest_first"
-      currency: "EUR"
     rules:
       max_price: 180
       min_price: 30
       below_rolling_average_pct: 10
-      include_keywords: ["scellé", "sealed", "neuf"]
-      exclude_keywords: ["vide", "empty", "ouvert", "opened"]
+      include_keywords: ["scellé", "sealed", "neuf", "nová", "zapieczętowane"]
+      exclude_keywords: ["vide", "empty", "ouvert", "opened", "otevřené", "otwarte"]
       min_score_to_alert: 55
 
   - name: "Base Set Cards"
@@ -54,7 +65,6 @@ searches:
       search_text: "pokemon base set 1999"
       catalog_ids: "2971"
       order: "newest_first"
-      currency: "EUR"
     rules:
       max_price: 250
       min_price: 5
