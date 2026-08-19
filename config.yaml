@@ -15,37 +15,35 @@ global:
     - name: "Poland"
       base_url: "https://www.vinted.pl"
 
-  # Seconds to wait between each search query (be polite, avoid bot-detection)
   delay_between_queries_sec: 5
-  # Extra pause when switching from one country's domain to the next
   delay_between_domains_sec: 3
   # How many of the newest listings to pull per query, per domain, per run
   items_per_query: 40
-  # Rolling price history window used for the "self-learning" average-price rule.
-  # Kept SEPARATE per country (prices/currencies differ), so a search's average
-  # is only ever compared against other listings from the same domain.
+  # Rolling price history window used to judge what a "steal" looks like.
+  # Kept SEPARATE per country (different currencies), so an item is only ever
+  # compared against recent listings from the same domain.
   price_history_window: 50
 
-# Each entry below is one independent search + its own deal-scoring rules.
-# It runs across ALL domains listed above automatically — you don't repeat
-# it per country. Add/remove/edit entries freely.
+# Each entry below is one independent search + its own steal-detection rules.
+# It runs across ALL domains listed above automatically.
 searches:
 
   - name: "Charizard PSA 10"
-    # Vinted catalog search params (mirrors what you'd type into the site's search box).
-    # Do NOT set "currency" here — each domain reports prices in its own native
-    # currency (EUR for SK, CZK for CZ, PLN for PL) and the bot handles that per item.
     params:
       search_text: "charizard psa 10"
       catalog_ids: "2971"     # Trading cards catalog id — same across Vinted domains
       order: "newest_first"
     rules:
-      max_price: 400                # in the local currency of whichever domain matched
-      min_price: 20
-      below_rolling_average_pct: 15 # alert if price is >=15% below recent average for this search+domain
-      include_keywords: ["psa 10"]
-      exclude_keywords: ["proxy", "custom", "fake", "reprint", "case only", "empty"]
-      min_score_to_alert: 60        # 0-100, see README for how score is computed
+      # A listing only alerts if BOTH of these are true:
+      min_pct_below_average: 30   # must be at least 30% cheaper than recent average
+      must_beat_recent_low: true  # AND must undercut the single cheapest recent listing
+      min_history_size: 5         # need at least this many past prices before judging
+      # Nothing below is applied unless you explicitly set it — no keyword or
+      # low-price filtering by default. Judging "fake" or "mispriced" is on you.
+      max_price: null
+      min_price: null
+      include_keywords: []
+      exclude_keywords: []
 
   - name: "Booster Box Sealed"
     params:
@@ -53,12 +51,13 @@ searches:
       catalog_ids: "2971"
       order: "newest_first"
     rules:
-      max_price: 180
-      min_price: 30
-      below_rolling_average_pct: 10
-      include_keywords: ["scellé", "sealed", "neuf", "nová", "zapieczętowane"]
-      exclude_keywords: ["vide", "empty", "ouvert", "opened", "otevřené", "otwarte"]
-      min_score_to_alert: 55
+      min_pct_below_average: 30
+      must_beat_recent_low: true
+      min_history_size: 5
+      max_price: null
+      min_price: null
+      include_keywords: []
+      exclude_keywords: []
 
   - name: "Base Set Cards"
     params:
@@ -66,14 +65,14 @@ searches:
       catalog_ids: "2971"
       order: "newest_first"
     rules:
-      max_price: 250
-      min_price: 5
-      below_rolling_average_pct: 20
+      min_pct_below_average: 35   # rarer/wider price spread, so a bigger gap needed
+      must_beat_recent_low: true
+      min_history_size: 5
+      max_price: null
+      min_price: null
       include_keywords: []
-      exclude_keywords: ["proxy", "custom", "fake"]
-      min_score_to_alert: 65
+      exclude_keywords: []
 
 discord:
-  # Set the real URL as a GitHub Actions secret named DISCORD_WEBHOOK_URL — never commit it here.
   webhook_url_env_var: "DISCORD_WEBHOOK_URL"
-  mention_role_id_env_var: "DISCORD_ROLE_ID"   # optional, leave unset if not used
+  mention_role_id_env_var: "DISCORD_ROLE_ID"
