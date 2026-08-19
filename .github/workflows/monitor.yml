@@ -2,11 +2,12 @@ name: Vinted Pokemon Monitor
 
 on:
   schedule:
-    # Every 5 minutes — steals get bought fast, so this trades a bit more
-    # Actions usage for speed. Public repos still get unlimited free minutes.
-    # GitHub doesn't guarantee exact timing under load, so treat this as
-    # "roughly every 5 min," not a hard guarantee.
+    # Kept as a backup trigger, but GitHub's native cron is "best effort" and
+    # can silently skip runs under load — see README for the reliable
+    # external-pinger setup that actually drives this in practice.
     - cron: "*/5 * * * *"
+  repository_dispatch:
+    types: [run-monitor]   # triggered by an external cron service, see README
   workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
 
 permissions:
