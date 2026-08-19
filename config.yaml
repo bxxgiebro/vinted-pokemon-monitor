@@ -1,0 +1,69 @@
+# =============================================================================
+# CONFIG — this is the only file you should need to touch month to month.
+# Edit search queries and deal rules here. No code changes needed.
+# =============================================================================
+
+global:
+  # Vinted domain to search (change per country: vinted.fr, vinted.de, vinted.co.uk, etc.)
+  base_url: "https://www.vinted.fr"
+  # Seconds to wait between each search query below (be polite, avoid bot-detection)
+  delay_between_queries_sec: 5
+  # How many of the newest listings to pull per query, per run
+  items_per_query: 40
+  # Rolling price history window used for the "self-learning" average-price rule.
+  # The bot remembers the last N prices it has seen per search and flags listings
+  # that undercut that recent average — so "good deal" adapts automatically as
+  # the market moves, without you having to update numbers every month.
+  price_history_window: 50
+
+# Each entry below is one independent search + its own deal-scoring rules.
+# Add/remove/edit entries freely — this is the "customizable" part.
+searches:
+
+  - name: "Charizard PSA 10"
+    # Vinted catalog search params (mirrors what you'd type into vinted.fr search box)
+    params:
+      search_text: "charizard psa 10"
+      catalog_ids: "2971"     # Trading cards catalog id on Vinted FR — adjust if needed
+      order: "newest_first"
+      currency: "EUR"
+    rules:
+      max_price: 400                # hard ceiling — never alert above this
+      min_price: 20                 # ignore obvious mispriced/scam-low listings
+      below_rolling_average_pct: 15 # alert if price is >=15% below recent average for this search
+      include_keywords: ["psa 10"]  # title/description must contain at least one (case-insensitive)
+      exclude_keywords: ["proxy", "custom", "fake", "reprint", "case only", "empty"]
+      min_score_to_alert: 60        # 0-100, see README for how score is computed
+
+  - name: "Booster Box Sealed"
+    params:
+      search_text: "pokemon booster box scellé"
+      catalog_ids: "2971"
+      order: "newest_first"
+      currency: "EUR"
+    rules:
+      max_price: 180
+      min_price: 30
+      below_rolling_average_pct: 10
+      include_keywords: ["scellé", "sealed", "neuf"]
+      exclude_keywords: ["vide", "empty", "ouvert", "opened"]
+      min_score_to_alert: 55
+
+  - name: "Base Set Cards"
+    params:
+      search_text: "pokemon base set 1999"
+      catalog_ids: "2971"
+      order: "newest_first"
+      currency: "EUR"
+    rules:
+      max_price: 250
+      min_price: 5
+      below_rolling_average_pct: 20
+      include_keywords: []
+      exclude_keywords: ["proxy", "custom", "fake"]
+      min_score_to_alert: 65
+
+discord:
+  # Set the real URL as a GitHub Actions secret named DISCORD_WEBHOOK_URL — never commit it here.
+  webhook_url_env_var: "DISCORD_WEBHOOK_URL"
+  mention_role_id_env_var: "DISCORD_ROLE_ID"   # optional, leave unset if not used
