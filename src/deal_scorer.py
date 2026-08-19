@@ -1,19 +1,23 @@
 """
 deal_scorer.py
 
-Decides whether a listing counts as a "good deal" and produces a 0-100 score.
+Decides whether a listing is a genuine STEAL — not just "a bit cheaper than
+average", but priced well below anything recently seen, worth grabbing
+before someone else does.
 
-Design goal: the Pokemon card market shifts month to month, so instead of
-hard-coding "a good Charizard PSA 10 is under $150", the score blends:
+Two knobs drive this (set per search in config.yaml):
 
-  1. Hard rules from config.yaml (price ceiling/floor, keywords) — you control these.
-  2. A *self-learning* rolling average: the bot remembers recent prices it has
-     seen for each search and rewards listings priced well below that recent
-     average. This means the bar for "good deal" adjusts automatically as the
-     market rises or falls, without you having to edit numbers constantly.
+  1. min_pct_below_average: the listing must be at least this % cheaper than
+     the rolling average of recent listings for this search+country.
+  2. must_beat_recent_low: if true (default), the listing must ALSO undercut
+     the single cheapest price seen recently — not just the average. This is
+     what filters out "cheaper than average but still not special" listings.
 
-You only ever need to touch config.yaml. This file is the logic and shouldn't
-need monthly edits.
+Deliberately NOT filtered here: suspiciously low prices, "fake"/"proxy"
+keywords, condition claims. That judgment call is left to you — the bot's
+job is speed and price, not authentication. Use include_keywords /
+exclude_keywords / min_price in config.yaml only if YOU want that filtering;
+none of it is applied by default.
 """
 
 from __future__ import annotations
@@ -37,6 +41,8 @@ def _text_matches_keywords(text: str, keywords: list[str]) -> bool:
 
 
 def _text_has_any(text: str, keywords: list[str]) -> bool:
+    if not keywords:
+        return False
     text_lower = text.lower()
     return any(kw.lower() in text_lower for kw in keywords)
 
@@ -49,57 +55,69 @@ def score_item(
     recent_prices: list[float],
 ) -> ScoredItem:
     """
-    Returns a ScoredItem with a 0-100 score and whether it clears the
-    configured min_score_to_alert threshold.
+    Returns a ScoredItem. is_deal=True only for genuine below-the-floor steals,
+    once enough price history exists to judge that.
     """
     reasons: list[str] = []
     text = f"{title or ''} {description or ''}"
 
-    # --- Hard disqualifiers first (score = 0, no alert) ---
+    # --- Optional hard filters (off unless you set them in config.yaml) ---
     if rules.get("max_price") is not None and price > rules["max_price"]:
         return ScoredItem(0, False, ["above max_price"], None)
 
     if rules.get("min_price") is not None and price < rules["min_price"]:
-        return ScoredItem(0, False, ["below min_price (likely mispriced/scam)"], None)
+        return ScoredItem(0, False, ["below min_price filter (you disabled this by default)"], None)
 
     exclude_keywords = rules.get("exclude_keywords") or []
     if _text_has_any(text, exclude_keywords):
         return ScoredItem(0, False, ["matched an exclude_keyword"], None)
 
     include_keywords = rules.get("include_keywords") or []
-    if not _text_matches_keywords(text, include_keywords):
+    if include_keywords and not _text_matches_keywords(text, include_keywords):
         return ScoredItem(0, False, ["missing required include_keywords"], None)
 
-    # --- Scoring starts at a baseline once it passes hard filters ---
-    score = 40
-    reasons.append("passed price range + keyword filters (+40)")
+    # --- Need enough price history to know what a "steal" even means here ---
+    min_history = rules.get("min_history_size", 5)
+    if len(recent_prices) < min_history:
+        return ScoredItem(
+            0, False,
+            [f"only {len(recent_prices)} prices seen so far, need {min_history} "
+             f"before judging steals for this search"],
+            None,
+        )
 
-    rolling_average = None
-    if recent_prices:
-        rolling_average = sum(recent_prices) / len(recent_prices)
-        threshold_pct = rules.get("below_rolling_average_pct", 0)
-        if rolling_average > 0:
-            pct_below = (rolling_average - price) / rolling_average * 100
-            if pct_below >= threshold_pct:
-                # Scale bonus points by how far below average it is, capped at +50
-                bonus = min(50, int(pct_below * 1.5))
-                score += bonus
-                reasons.append(
-                    f"{pct_below:.1f}% below recent average of {rolling_average:.2f} (+{bonus})"
-                )
-            else:
-                reasons.append(
-                    f"only {pct_below:.1f}% below recent average "
-                    f"(needs {threshold_pct}%)"
-                )
-    else:
-        # No history yet for this search — give a small neutral bonus so the
-        # first few runs aren't stuck with zero alerts while history builds up.
-        score += 10
-        reasons.append("no price history yet, neutral bonus (+10)")
+    rolling_average = sum(recent_prices) / len(recent_prices)
+    recent_low = min(recent_prices)
 
-    score = max(0, min(100, score))
-    min_score = rules.get("min_score_to_alert", 60)
-    is_deal = score >= min_score
+    pct_below_avg = (rolling_average - price) / rolling_average * 100 if rolling_average > 0 else 0
+    threshold_pct = rules.get("min_pct_below_average", 30)
+    must_beat_low = rules.get("must_beat_recent_low", True)
+
+    clears_avg_threshold = pct_below_avg >= threshold_pct
+    beats_recent_low = price <= recent_low
+
+    if not clears_avg_threshold:
+        reasons.append(
+            f"only {pct_below_avg:.1f}% below recent average of {rolling_average:.2f} "
+            f"(needs {threshold_pct}%)"
+        )
+    if must_beat_low and not beats_recent_low:
+        reasons.append(
+            f"cheapest recently seen was {recent_low:.2f}, this is {price:.2f} "
+            f"(doesn't undercut it)"
+        )
+
+    is_deal = clears_avg_threshold and (beats_recent_low or not must_beat_low)
+
+    if is_deal:
+        reasons = [
+            f"{pct_below_avg:.1f}% below recent average of {rolling_average:.2f}",
+            f"new low: cheapest recently seen was {recent_low:.2f}" if beats_recent_low
+            else "below average threshold, recent-low check disabled",
+        ]
+
+    # Score is informational only now (shown in the Discord embed), not a gate.
+    score = max(0, min(100, int(pct_below_avg)))
 
     return ScoredItem(score, is_deal, reasons, rolling_average)
+
