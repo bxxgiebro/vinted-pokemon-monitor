@@ -2,10 +2,11 @@ name: Vinted Pokemon Monitor
 
 on:
   schedule:
-    # Every 15 minutes. GitHub Actions cron on public repos = unlimited free
-    # minutes, but don't go much tighter than this — frequent runs increase
-    # the chance of Vinted's anti-bot system flagging the shared runner IPs.
-    - cron: "*/15 * * * *"
+    # Every 5 minutes — steals get bought fast, so this trades a bit more
+    # Actions usage for speed. Public repos still get unlimited free minutes.
+    # GitHub doesn't guarantee exact timing under load, so treat this as
+    # "roughly every 5 min," not a hard guarantee.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
 
 permissions:
