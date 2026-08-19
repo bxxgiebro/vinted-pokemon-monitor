@@ -1,0 +1,44 @@
+name: Vinted Pokemon Monitor
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub Actions cron on public repos = unlimited free
+    # minutes, but don't go much tighter than this — frequent runs increase
+    # the chance of Vinted's anti-bot system flagging the shared runner IPs.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write   # needed so the workflow can commit updated state files back
+
+concurrency:
+  group: vinted-monitor
+  cancel-in-progress: false   # never kill a run mid-way; queue instead
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run monitor
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
+        run: python src/monitor.py
+
+      - name: Commit updated state
+        run: |
+          git config user.name "vinted-monitor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/seen_items.json data/price_history.json
+          git diff --cached --quiet || git commit -m "Update monitor state [skip ci]"
+          git push
