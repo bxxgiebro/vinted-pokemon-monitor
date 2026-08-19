@@ -3,8 +3,8 @@ monitor.py
 
 Entry point run on a schedule by GitHub Actions.
 
-For each search in config.yaml:
-  1. Query Vinted's catalog search via the `vinted_scraper` library.
+For each country domain in config.yaml (global.domains), and for each search:
+  1. Query that country's Vinted site via the `vinted_scraper` library.
   2. Skip listings we've already alerted on (tracked in data/seen_items.json).
   3. Score each new listing against that search's rules (see deal_scorer.py).
   4. Send a Discord alert for anything that clears its min_score_to_alert.
@@ -14,6 +14,11 @@ For each search in config.yaml:
 State is stored as plain JSON files under data/ — no database needed, which
 keeps this entirely within GitHub's free tier (state is just committed back
 to the repo by the workflow after each run).
+
+IMPORTANT: state and price history are keyed by "{domain_name}:{search_name}",
+never mixed across countries — different domains use different currencies
+(EUR/CZK/PLN), so averaging across them would be meaningless and a listing
+seen on one country's site is tracked independently from another's.
 """
 
 from __future__ import annotations
@@ -55,6 +60,7 @@ def main() -> None:
     global_cfg = config["global"]
     searches = config["searches"]
     discord_cfg = config["discord"]
+    domains = global_cfg["domains"]
 
     webhook_url = os.environ.get(discord_cfg["webhook_url_env_var"], "")
     if not webhook_url:
@@ -63,88 +69,102 @@ def main() -> None:
         sys.exit(1)
     mention_role_id = os.environ.get(discord_cfg.get("mention_role_id_env_var", ""), None)
 
-    # seen_items: {search_name: [item_id, ...]}  (capped list, oldest dropped)
+    # Keyed by "{domain_name}:{search_name}" so countries never mix.
     seen_items: dict = load_json(SEEN_PATH, {})
-    # price_history: {search_name: [price, ...]} rolling window
     price_history: dict = load_json(HISTORY_PATH, {})
 
-    scraper = VintedScraper(global_cfg["base_url"])
     items_per_query = global_cfg.get("items_per_query", 40)
     history_window = global_cfg.get("price_history_window", 50)
-    delay = global_cfg.get("delay_between_queries_sec", 5)
+    query_delay = global_cfg.get("delay_between_queries_sec", 5)
+    domain_delay = global_cfg.get("delay_between_domains_sec", 3)
 
     total_alerts = 0
 
-    for search in searches:
-        name = search["name"]
-        rules = search.get("rules", {})
-        params = dict(search.get("params", {}))
-        params.setdefault("per_page", items_per_query)
+    for domain in domains:
+        domain_name = domain["name"]
+        base_url = domain["base_url"]
+        print(f"=== Domain: {domain_name} ({base_url}) ===")
 
-        print(f"[{name}] searching Vinted...")
         try:
-            results = scraper.search(params)
-        except Exception as exc:  # network / anti-bot failures shouldn't kill the whole run
-            print(f"[{name}] search failed: {exc}", file=sys.stderr)
-            time.sleep(delay)
+            scraper = VintedScraper(base_url)
+        except Exception as exc:
+            print(f"[{domain_name}] failed to init scraper: {exc}", file=sys.stderr)
             continue
 
-        seen_ids = set(seen_items.get(name, []))
-        history = price_history.get(name, [])
-        new_seen_ids = list(seen_items.get(name, []))
+        for search in searches:
+            search_name = search["name"]
+            key = f"{domain_name}:{search_name}"
+            rules = search.get("rules", {})
+            params = dict(search.get("params", {}))
+            params.setdefault("per_page", items_per_query)
 
-        for item in results:
-            item_id = str(item.id)
-            if item_id in seen_ids:
-                continue  # already processed in a previous run
+            print(f"[{key}] searching...")
+            try:
+                results = scraper.search(params)
+            except Exception as exc:  # network / anti-bot failures shouldn't kill the whole run
+                print(f"[{key}] search failed: {exc}", file=sys.stderr)
+                time.sleep(query_delay)
+                continue
 
-            price = float(item.price or 0)
-            title = item.title or ""
-            description = item.description or ""
+            seen_ids = set(seen_items.get(key, []))
+            history = price_history.get(key, [])
+            new_seen_ids = list(seen_items.get(key, []))
 
-            result = score_item(
-                price=price,
-                title=title,
-                description=description,
-                rules=rules,
-                recent_prices=history,
-            )
+            for item in results:
+                item_id = str(item.id)
+                if item_id in seen_ids:
+                    continue  # already processed in a previous run
 
-            print(f"[{name}] {title[:60]!r} - {price} - score {result.score} "
-                  f"- deal={result.is_deal}")
+                price = float(item.price or 0)
+                title = item.title or ""
+                description = item.description or ""
 
-            if result.is_deal:
-                image_url = item.photos[0].url if item.photos else None
-                try:
-                    send_deal_alert(
-                        webhook_url,
-                        search_name=name,
-                        title=title,
-                        price=price,
-                        currency=item.currency or "EUR",
-                        url=item.url or f"{global_cfg['base_url']}{item.path}",
-                        image_url=image_url,
-                        score=result.score,
-                        reasons=result.reasons,
-                        mention_role_id=mention_role_id,
-                    )
-                    total_alerts += 1
-                except Exception as exc:
-                    print(f"[{name}] failed to send Discord alert: {exc}", file=sys.stderr)
+                result = score_item(
+                    price=price,
+                    title=title,
+                    description=description,
+                    rules=rules,
+                    recent_prices=history,
+                )
 
-            # Track every valid-priced listing in history (deal or not) so the
-            # rolling average reflects the real market, not just past deals.
-            if price > 0:
-                history.append(price)
-                history = history[-history_window:]
+                print(f"[{key}] {title[:60]!r} - {price} {item.currency} - "
+                      f"score {result.score} - deal={result.is_deal}")
 
-            new_seen_ids.append(item_id)
+                if result.is_deal:
+                    image_url = item.photos[0].url if item.photos else None
+                    try:
+                        send_deal_alert(
+                            webhook_url,
+                            search_name=f"{search_name} ({domain_name})",
+                            title=title,
+                            price=price,
+                            currency=item.currency or "",
+                            url=item.url or f"{base_url}{item.path}",
+                            image_url=image_url,
+                            score=result.score,
+                            reasons=result.reasons,
+                            mention_role_id=mention_role_id,
+                        )
+                        total_alerts += 1
+                    except Exception as exc:
+                        print(f"[{key}] failed to send Discord alert: {exc}", file=sys.stderr)
 
-        # Cap seen-items list so the JSON file doesn't grow forever
-        seen_items[name] = new_seen_ids[-(items_per_query * 20):]
-        price_history[name] = history
+                # Track every valid-priced listing in history (deal or not) so the
+                # rolling average reflects the real market for this domain, not
+                # just past deals.
+                if price > 0:
+                    history.append(price)
+                    history = history[-history_window:]
 
-        time.sleep(delay)
+                new_seen_ids.append(item_id)
+
+            # Cap seen-items list so the JSON file doesn't grow forever
+            seen_items[key] = new_seen_ids[-(items_per_query * 20):]
+            price_history[key] = history
+
+            time.sleep(query_delay)
+
+        time.sleep(domain_delay)
 
     save_json(SEEN_PATH, seen_items)
     save_json(HISTORY_PATH, price_history)
@@ -153,3 +173,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
