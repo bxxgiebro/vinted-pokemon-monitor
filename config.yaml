@@ -32,6 +32,11 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
+      # If you already know what a steal price looks like for this set, set
+      # it here to alert immediately, without waiting for 5+ prices of history
+      # to build up. Leave as null to rely purely on the relative comparison
+      # above.
+      absolute_steal_price: 110
       # Sealed-only filter: must mention one of these product terms...
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
@@ -49,6 +54,11 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
+      # If you already know what a steal price looks like for this set, set
+      # it here to alert immediately, without waiting for 5+ prices of history
+      # to build up. Leave as null to rely purely on the relative comparison
+      # above.
+      absolute_steal_price: 130
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
@@ -66,6 +76,11 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
+      # If you already know what a steal price looks like for this set, set
+      # it here to alert immediately, without waiting for 5+ prices of history
+      # to build up. Leave as null to rely purely on the relative comparison
+      # above.
+      absolute_steal_price: 130
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
