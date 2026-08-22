@@ -455,8 +455,6 @@
     160.0
   ],
   "Slovakia:Prismatic Evolutions ETB": [
-    5.65,
-    4.44,
     200.0,
     3.77,
     175.74,
@@ -504,7 +502,9 @@
     11.73,
     6.1,
     1.5,
-    880.0
+    880.0,
+    82.13,
+    82.13
   ],
   "Slovakia:Ascended Heroes ETB": [
     50.36,
