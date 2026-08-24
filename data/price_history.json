@@ -405,8 +405,6 @@
   "Slovakia:Destined Rivals ETB": [
     0.47,
     0.47,
-    0.47,
-    0.47,
     1.0,
     1.0,
     1.17,
@@ -452,7 +450,9 @@
     105.56,
     50.0,
     8.5,
-    1.17
+    1.17,
+    0.35,
+    0.35
   ],
   "Slovakia:Prismatic Evolutions ETB": [
     1.17,
