@@ -5,21 +5,19 @@ Entry point run on a schedule by GitHub Actions.
 
 For each search in config.yaml:
   1. Query Vinted (Slovakia) via the `vinted_scraper` library.
-  2. Query Bazos.sk via their RSS feed (see bazos_scraper.py for why RSS,
-     not their disallowed search pages).
-  3. Merge both sources' results — both are EUR/Slovakia, so price history
-     is shared across them per search, giving one combined market picture
-     rather than two separate ones.
-  4. Skip listings we've already alerted on (tracked in data/seen_items.json).
-  5. Score each new listing against that search's rules (see deal_scorer.py).
-  6. Send a Discord alert for anything that clears its min_score_to_alert.
-  7. Update price history + seen-items state and write it back to disk so the
+  2. Skip listings we've already alerted on (tracked in data/seen_items.json).
+  3. Score each new listing against that search's rules (see deal_scorer.py).
+  4. Send a Discord alert for anything that clears its min_score_to_alert.
+  5. Update price history + seen-items state and write it back to disk so the
      next run (and the workflow's git commit step) persists it.
 
 State is stored as plain JSON files under data/ — no database needed, which
 keeps this entirely within GitHub's free tier (state is just committed back
-to the repo by the workflow after each run). State is keyed by search name
-only now (single country, shared currency across both sources).
+to the repo by the workflow after each run). State is keyed by search name.
+
+NOTE: this only covers Vinted. Bazos.sk integration was attempted and
+removed — see README "Sources" section for why (their RSS doesn't support
+keyword filtering, and their search pages are robots.txt-disallowed).
 """
 
 from __future__ import annotations
@@ -33,7 +31,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from deal_scorer import score_item
 from discord_notifier import send_deal_alert
-from bazos_scraper import fetch_bazos_items
 
 from vinted_scraper import VintedScraper
 
@@ -58,7 +55,6 @@ def save_json(path: Path, data) -> None:
 
 
 def fetch_vinted_items(scraper, params: dict, items_per_query: int):
-    """Returns a list of normalized dicts: id, title, description, price, currency, url, image_url, source."""
     query = dict(params)
     query.setdefault("per_page", items_per_query)
     results = scraper.search(query)
@@ -98,11 +94,21 @@ def main() -> None:
     history_window = global_cfg.get("price_history_window", 50)
     query_delay = global_cfg.get("delay_between_queries_sec", 5)
 
-    try:
-        vinted_scraper = VintedScraper(vinted_domain)
-    except Exception as exc:
-        print(f"Failed to init Vinted scraper: {exc}", file=sys.stderr)
-        vinted_scraper = None
+    vinted_scraper = None
+    for attempt in range(1, 4):
+        try:
+            vinted_scraper = VintedScraper(vinted_domain)
+            break
+        except Exception as exc:
+            # Vinted's anti-bot (Datadome) can block cookie fetches outright — see
+            # README "Honest limitations". This may be intermittent rate-limiting
+            # rather than a hard block, so retry a couple times before giving up.
+            print(f"WARNING: Vinted scraper init failed (attempt {attempt}/3): {exc}", file=sys.stderr)
+            if attempt < 3:
+                time.sleep(5 * attempt)
+    if vinted_scraper is None:
+        print("ERROR: Vinted unavailable after 3 attempts — this run will have "
+              "no Vinted results. See README for what to check.", file=sys.stderr)
 
     total_alerts = 0
 
@@ -110,7 +116,6 @@ def main() -> None:
         search_name = search["name"]
         rules = search.get("rules", {})
         vinted_params = dict(search.get("params", {}))
-        bazos_cfg = search.get("bazos", {})
 
         all_items = []
 
@@ -121,24 +126,8 @@ def main() -> None:
             except Exception as exc:
                 print(f"[{search_name}] Vinted search failed: {exc}", file=sys.stderr)
             time.sleep(query_delay)
-
-        if bazos_cfg.get("enabled", False):
-            print(f"[{search_name}] searching Bazos.sk...")
-            try:
-                bazos_results = fetch_bazos_items(
-                    categories=bazos_cfg.get("categories", ["ostatne", "deti"]),
-                    search_text=bazos_cfg.get("search_text", vinted_params.get("search_text", search_name)),
-                    keyword_filter=bazos_cfg.get("keyword_filter"),
-                )
-                for b in bazos_results:
-                    all_items.append({
-                        "id": b.id, "title": b.title, "description": b.description,
-                        "price": b.price, "currency": b.currency, "url": b.url,
-                        "image_url": b.image_url, "source": "Bazos.sk",
-                    })
-            except Exception as exc:
-                print(f"[{search_name}] Bazos search failed: {exc}", file=sys.stderr)
-            time.sleep(query_delay)
+        else:
+            print(f"[{search_name}] skipped — Vinted scraper unavailable this run.")
 
         seen_ids = set(seen_items.get(search_name, []))
         history = price_history.get(search_name, [])
