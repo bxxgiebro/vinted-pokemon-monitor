@@ -12,11 +12,6 @@ global:
 
 # One search per set/ETB you're hunting restocks for. Add more sets below the
 # same way as new ones release — copy a block, change search_text and name.
-#
-# Each search checks Vinted (Slovakia) AND, if bazos.enabled is true, Bazos.sk
-# via their RSS feed. Both sources share the same price history for a search
-# (both are EUR/Slovakia), so "steal" detection is judged against the
-# combined market, not two separate ones.
 searches:
 
   - name: "Destined Rivals ETB"
@@ -24,13 +19,6 @@ searches:
       search_text: "destined rivals"
       catalog_ids: "2971"     # Vinted trading cards catalog id
       order: "newest_first"
-    bazos:
-      enabled: true
-      # Pokemon sealed product on Bazos.sk mostly shows up under "ostatne"
-      # (collectibles/other) and "deti" (kids) — add more category subdomains
-      # here if you find listings elsewhere (e.g. "sport", "www" for sitewide).
-      categories: ["ostatne", "deti"]
-      search_text: "destined rivals"
     rules:
       min_pct_below_average: 30
       must_beat_recent_low: true
@@ -47,10 +35,6 @@ searches:
       search_text: "prismatic evolutions"
       catalog_ids: "2971"
       order: "newest_first"
-    bazos:
-      enabled: true
-      categories: ["ostatne", "deti"]
-      search_text: "prismatic evolutions"
     rules:
       min_pct_below_average: 30
       must_beat_recent_low: true
@@ -69,10 +53,6 @@ searches:
       search_text: "ascended heroes"
       catalog_ids: "2971"
       order: "newest_first"
-    bazos:
-      enabled: true
-      categories: ["ostatne", "deti"]
-      search_text: "ascended heroes"
     rules:
       min_pct_below_average: 30
       must_beat_recent_low: true
