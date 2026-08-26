@@ -1,13 +1,8 @@
 name: Vinted Pokemon Monitor
 
 on:
-  schedule:
-    # Kept as a backup trigger, but GitHub's native cron is "best effort" and
-    # can silently skip runs under load — see README for the reliable
-    # external-pinger setup that actually drives this in practice.
-    - cron: "*/5 * * * *"
   repository_dispatch:
-    types: [run-monitor]   # triggered by an external cron service, see README
+    types: [run-monitor]   # triggered by the external cron-job.org pinger, see README
   workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
 
 permissions:
@@ -42,5 +37,32 @@ jobs:
           git config user.name "vinted-monitor-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/seen_items.json data/price_history.json
-          git diff --cached --quiet || git commit -m "Update monitor state [skip ci]"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No state changes to commit."
+            exit 0
+          fi
+          git commit -m "Update monitor state [skip ci]"
+
+          # Retry with rebase: if main moved since checkout (e.g. you edited
+          # config.yaml on GitHub while this run was mid-flight), fetch the
+          # latest and replay our state-file commit on top instead of just
+          # failing outright.
+          attempt=1
+          max_attempts=5
+          until git push; do
+            if [ "$attempt" -ge "$max_attempts" ]; then
+              echo "::warning::Push failed after $max_attempts attempts — state for this run was not saved. Next run will pick up from the last successfully saved state."
+              exit 0   # don't fail the whole job over a state-save race; the monitor itself already ran successfully
+            fi
+            echo "Push rejected (attempt $attempt/$max_attempts) — fetching and rebasing..."
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "::warning::Rebase conflict on state files — aborting rebase, skipping state save for this run."
+              git rebase --abort
+              exit 0
+            fi
+            sleep $((RANDOM % 5 + 2))
+            attempt=$((attempt + 1))
+          done
+
