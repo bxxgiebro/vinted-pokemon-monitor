@@ -4,43 +4,42 @@
 # =============================================================================
 
 global:
-  # Only Slovakia — cross-border shipping availability varies by country, and
-  # what you can actually order into Slovakia isn't the same as what a Polish
-  # or Czech buyer can. Rather than guess at that, this only searches the site
-  # you can order from directly. Add other domains back if that changes.
-  domains:
-    - name: "Slovakia"
-      base_url: "https://www.vinted.sk"
+  vinted_base_url: "https://www.vinted.sk"
 
   delay_between_queries_sec: 5
-  delay_between_domains_sec: 3
   items_per_query: 40
   price_history_window: 50
 
 # One search per set/ETB you're hunting restocks for. Add more sets below the
 # same way as new ones release — copy a block, change search_text and name.
+#
+# Each search checks Vinted (Slovakia) AND, if bazos.enabled is true, Bazos.sk
+# via their RSS feed. Both sources share the same price history for a search
+# (both are EUR/Slovakia), so "steal" detection is judged against the
+# combined market, not two separate ones.
 searches:
 
   - name: "Destined Rivals ETB"
     params:
       search_text: "destined rivals"
-      catalog_ids: "2971"     # Trading cards catalog id
+      catalog_ids: "2971"     # Vinted trading cards catalog id
       order: "newest_first"
+    bazos:
+      enabled: true
+      # Pokemon sealed product on Bazos.sk mostly shows up under "ostatne"
+      # (collectibles/other) and "deti" (kids) — add more category subdomains
+      # here if you find listings elsewhere (e.g. "sport", "www" for sitewide).
+      categories: ["ostatne", "deti"]
+      search_text: "destined rivals"
     rules:
       min_pct_below_average: 30
       must_beat_recent_low: true
       min_history_size: 5
       max_price: null
       min_price: null
-      # If you already know what a steal price looks like for this set, set
-      # it here to alert immediately, without waiting for 5+ prices of history
-      # to build up. Leave as null to rely purely on the relative comparison
-      # above.
       absolute_steal_price: 110
-      # Sealed-only filter: must mention one of these product terms...
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
-      # ...and must NOT look like a loose single card or already-opened box.
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
   - name: "Prismatic Evolutions ETB"
@@ -48,16 +47,16 @@ searches:
       search_text: "prismatic evolutions"
       catalog_ids: "2971"
       order: "newest_first"
+    bazos:
+      enabled: true
+      categories: ["ostatne", "deti"]
+      search_text: "prismatic evolutions"
     rules:
       min_pct_below_average: 30
       must_beat_recent_low: true
       min_history_size: 5
       max_price: null
       min_price: null
-      # If you already know what a steal price looks like for this set, set
-      # it here to alert immediately, without waiting for 5+ prices of history
-      # to build up. Leave as null to rely purely on the relative comparison
-      # above.
       absolute_steal_price: 130
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
@@ -70,16 +69,16 @@ searches:
       search_text: "ascended heroes"
       catalog_ids: "2971"
       order: "newest_first"
+    bazos:
+      enabled: true
+      categories: ["ostatne", "deti"]
+      search_text: "ascended heroes"
     rules:
       min_pct_below_average: 30
       must_beat_recent_low: true
       min_history_size: 5
       max_price: null
       min_price: null
-      # If you already know what a steal price looks like for this set, set
-      # it here to alert immediately, without waiting for 5+ prices of history
-      # to build up. Leave as null to rely purely on the relative comparison
-      # above.
       absolute_steal_price: 130
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
