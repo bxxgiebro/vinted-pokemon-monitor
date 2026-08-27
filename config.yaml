@@ -25,7 +25,7 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
-      absolute_steal_price: 110
+      absolute_steal_price: 125
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
@@ -41,7 +41,7 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
-      absolute_steal_price: 130
+      absolute_steal_price: 140
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
@@ -59,7 +59,7 @@ searches:
       min_history_size: 5
       max_price: null
       min_price: null
-      absolute_steal_price: 130
+      absolute_steal_price: 140
       include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
                           "zapečatené", "neotvorené", "booster bundle"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
