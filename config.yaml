@@ -26,8 +26,8 @@ searches:
       max_price: null
       min_price: null
       absolute_steal_price: 125
-      include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
-                          "zapečatené", "neotvorené", "booster bundle"]
+      include_keywords: ["etb", "elite trainer box", "sealed",
+                          "zapečatené", "neotvorené"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
   - name: "Prismatic Evolutions ETB"
@@ -42,8 +42,8 @@ searches:
       max_price: null
       min_price: null
       absolute_steal_price: 140
-      include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
-                          "zapečatené", "neotvorené", "booster bundle"]
+      include_keywords: ["etb", "elite trainer box", "sealed",
+                          "zapečatené", "neotvorené"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
   - name: "Ascended Heroes ETB"
@@ -60,8 +60,8 @@ searches:
       max_price: null
       min_price: null
       absolute_steal_price: 140
-      include_keywords: ["etb", "elite trainer box", "booster box", "sealed",
-                          "zapečatené", "neotvorené", "booster bundle"]
+      include_keywords: ["etb", "elite trainer box",  "sealed",
+                          "zapečatené", "neotvorené"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
 discord:
