@@ -10,8 +10,11 @@ global:
   items_per_query: 40
   price_history_window: 50
 
-# One search per set/ETB you're hunting restocks for. Add more sets below the
-# same way as new ones release — copy a block, change search_text and name.
+# One search per PRODUCT (not just per set) — an ETB, a booster box, and an
+# SPC for the same set are priced completely differently, so they're kept as
+# separate searches with their own price history. include_keywords are now
+# product-specific (not just "sealed") so an ETB listing can't accidentally
+# pollute a booster box search's price history and vice versa.
 searches:
 
   - name: "Destined Rivals ETB"
@@ -26,9 +29,25 @@ searches:
       max_price: null
       min_price: null
       absolute_steal_price: 125
-      include_keywords: ["etb", "elite trainer box", "sealed",
-                          "zapečatené", "neotvorené"]
-      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
+      include_keywords: ["etb", "elite trainer box"]
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card",
+                          "booster box", "booster bundle"]
+
+  - name: "Destined Rivals Booster Box"
+    params:
+      search_text: "destined rivals booster box"
+      catalog_ids: "2971"
+      order: "newest_first"
+    rules:
+      min_pct_below_average: 30
+      must_beat_recent_low: true
+      min_history_size: 5
+      max_price: null
+      min_price: null
+      absolute_steal_price: 300
+      include_keywords: ["booster box", "booster bundle"]
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card",
+                          "etb", "elite trainer box"]
 
   - name: "Prismatic Evolutions ETB"
     params:
@@ -42,8 +61,24 @@ searches:
       max_price: null
       min_price: null
       absolute_steal_price: 140
-      include_keywords: ["etb", "elite trainer box", "sealed",
-                          "zapečatené", "neotvorené"]
+      include_keywords: ["etb", "elite trainer box"]
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card",
+                          "booster box", "booster bundle", "spc", "super premium collection",
+                          "premium collection"]
+
+  - name: "Prismatic Evolutions SPC"
+    params:
+      search_text: "prismatic evolutions super premium collection"
+      catalog_ids: "2971"
+      order: "newest_first"
+    rules:
+      min_pct_below_average: 30
+      must_beat_recent_low: true
+      min_history_size: 5
+      max_price: null
+      min_price: null
+      absolute_steal_price: 250
+      include_keywords: ["spc", "super premium collection", "premium collection"]
       exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
 
   - name: "Ascended Heroes ETB"
@@ -60,9 +95,9 @@ searches:
       max_price: null
       min_price: null
       absolute_steal_price: 140
-      include_keywords: ["etb", "elite trainer box",  "sealed",
-                          "zapečatené", "neotvorené"]
-      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card"]
+      include_keywords: ["etb", "elite trainer box"]
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card",
+                          "booster box", "booster bundle"]
 
 discord:
   webhook_url_env_var: "DISCORD_WEBHOOK_URL"
