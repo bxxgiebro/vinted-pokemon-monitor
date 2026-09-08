@@ -30,7 +30,7 @@ searches:
       min_price: null
       absolute_steal_price: 125
       include_keywords: ["etb", "elite trainer box"]
-      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card", "otvorene", "otvoreny", "otevreny"
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card", "otvorene", "otvoreny", "otevreny",
                           "booster box", "booster bundle", "sleeved", "booster pack", "sleeved booster"]
 
   - name: "Destined Rivals Booster Box"
@@ -46,7 +46,7 @@ searches:
       min_price: null
       absolute_steal_price: 300
       include_keywords: ["booster box"]
-      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card", "otvorene", "otvoreny", "otevreny"
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card", "otvorene", "otvoreny", "otevreny",
                           "etb", "elite trainer box", "booster bundle", "sleeved", "booster pack", "sleeved booster"]
 
   - name: "Prismatic Evolutions ETB"
@@ -79,7 +79,7 @@ searches:
       min_price: null
       absolute_steal_price: 260
       include_keywords: ["spc", "super premium collection", "premium collection"]
-      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card", "sleeved", "booster pack", "sleeved booster"
+      exclude_keywords: ["otvorené", "opened", "single card", "1 karta", "loose card", "sleeved", "booster pack", "sleeved booster",
                          "etb", "booster bundle", "elite trainer", "otvorene", "otvoreny", "otevreny", "accessories", "akcesoria", "doplnky"]
 
   - name: "Ascended Heroes ETB"
