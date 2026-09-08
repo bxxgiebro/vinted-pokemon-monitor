@@ -76,6 +76,17 @@ def score_item(
     if _text_has_any(text, exclude_keywords):
         return ScoredItem(0, False, ["matched an exclude_keyword"], None, "excluded_keyword")
 
+    # include_keyword_groups: AND across groups, OR within a group. Use this
+    # to require BOTH "it's the right set" AND "it's the right product type"
+    # — e.g. [["destined rivals"], ["etb", "elite trainer box"]] — so a
+    # listing for some other set's ETB can't sneak through just because it
+    # matches the product-type keywords alone.
+    include_keyword_groups = rules.get("include_keyword_groups") or []
+    for group in include_keyword_groups:
+        if group and not _text_matches_keywords(text, group):
+            return ScoredItem(0, False, ["missing required include_keyword_groups"], None, "missing_include_keyword")
+
+    # Back-compat: a flat include_keywords list still works as a single OR group.
     include_keywords = rules.get("include_keywords") or []
     if include_keywords and not _text_matches_keywords(text, include_keywords):
         return ScoredItem(0, False, ["missing required include_keywords"], None, "missing_include_keyword")
