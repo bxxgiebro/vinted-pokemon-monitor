@@ -42,3 +42,4 @@ def send_deal_alert(
 
     resp = requests.post(webhook_url, json=payload, timeout=15)
     resp.raise_for_status()
+
