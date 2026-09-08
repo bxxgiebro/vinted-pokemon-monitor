@@ -22,7 +22,7 @@ def send_deal_alert(
     mention_role_id: str | None = None,
 ) -> None:
     embed = {
-        "title":  "@everyone"+(title[:256]) if title else "Vinted listing",
+        "title":  "@everyone "+(title[:256]) if title else "Vinted listing",
         "url": url,
         "color": 0x2ECC71 if score >= 80 else 0xF1C40F,
         "fields": [
