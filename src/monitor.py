@@ -60,23 +60,35 @@ def save_json(path: Path, data) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
 
+def _make_absolute_url(value: str | None, domain: str) -> str | None:
+    """
+    Vinted's search API is inconsistent about whether `url`/`path` come back
+    as a full absolute URL or just a relative path (e.g.
+    "/items/123-some-item" with no domain) — observed both in practice.
+    Normalizes either case into a real, clickable, absolute URL.
+    """
+    if not value:
+        return None
+    if value.startswith("http://") or value.startswith("https://"):
+        return value
+    return f"{domain}{value if value.startswith('/') else '/' + value}"
+
+
 def fetch_vinted_items(scraper, params: dict, items_per_query: int, vinted_domain: str):
     query = dict(params)
     query.setdefault("per_page", items_per_query)
     results = scraper.search(query)
     normalized = []
     for item in results:
-        # IMPORTANT: Vinted's search API response doesn't include a full `url`
-        # per item — only a relative `path`. item.url is None for everything
-        # from search() (it's only populated by the separate item() endpoint,
-        # which we don't call). Build the real URL from domain+path instead,
-        # or Discord's embed API rejects an empty url with a 400.
-        if item.url:
-            full_url = item.url
-        elif item.path:
-            full_url = f"{vinted_domain}{item.path}"
-        else:
-            full_url = vinted_domain  # last-resort fallback, should be rare
+        # item.url is sometimes absolute, sometimes just a relative path with
+        # no domain, sometimes empty — normalize whichever we get. Discord's
+        # embed API rejects a non-absolute/empty url with a 400 for the WHOLE
+        # payload, so this has to be right every time, not just usually right.
+        full_url = (
+            _make_absolute_url(item.url, vinted_domain)
+            or _make_absolute_url(item.path, vinted_domain)
+            or vinted_domain  # last-resort fallback, should be rare
+        )
 
         normalized.append({
             "id": f"vinted-{item.id}",
