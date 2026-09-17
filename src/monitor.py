@@ -60,19 +60,31 @@ def save_json(path: Path, data) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
 
-def fetch_vinted_items(scraper, params: dict, items_per_query: int):
+def fetch_vinted_items(scraper, params: dict, items_per_query: int, vinted_domain: str):
     query = dict(params)
     query.setdefault("per_page", items_per_query)
     results = scraper.search(query)
     normalized = []
     for item in results:
+        # IMPORTANT: Vinted's search API response doesn't include a full `url`
+        # per item — only a relative `path`. item.url is None for everything
+        # from search() (it's only populated by the separate item() endpoint,
+        # which we don't call). Build the real URL from domain+path instead,
+        # or Discord's embed API rejects an empty url with a 400.
+        if item.url:
+            full_url = item.url
+        elif item.path:
+            full_url = f"{vinted_domain}{item.path}"
+        else:
+            full_url = vinted_domain  # last-resort fallback, should be rare
+
         normalized.append({
             "id": f"vinted-{item.id}",
             "title": item.title or "",
             "description": item.description or "",
             "price": float(item.price or 0),
             "currency": item.currency or "EUR",
-            "url": item.url or "",
+            "url": full_url,
             "image_url": item.photos[0].url if item.photos else None,
             "source": "Vinted",
         })
@@ -140,7 +152,7 @@ def main() -> None:
 
         if vinted_scraper is not None:
             try:
-                all_items = fetch_vinted_items(vinted_scraper, vinted_params, items_per_query)
+                all_items = fetch_vinted_items(vinted_scraper, vinted_params, items_per_query, vinted_domain)
             except Exception as exc:
                 print(f"[{search_name}] Vinted search failed: {exc}", file=sys.stderr)
             time.sleep(query_delay)
