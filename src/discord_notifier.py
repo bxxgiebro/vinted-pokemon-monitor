@@ -20,11 +20,9 @@ def send_deal_alert(
     score: int,
     reasons: list[str],
     mention_role_id: str | None = None,
-    mention_everyone: bool = False,
 ) -> None:
     embed = {
         "title": title[:256] if title else "Vinted listing",
-        "url": url,
         "color": 0x2ECC71 if score >= 80 else 0xF1C40F,
         "fields": [
             {"name": "Price", "value": f"{price} {currency}", "inline": True},
@@ -33,24 +31,21 @@ def send_deal_alert(
             {"name": "Why", "value": "\n".join(f"- {r}" for r in reasons)[:1024]},
         ],
     }
+    # Discord's embed API rejects an empty/invalid "url" with a 400 for the
+    # WHOLE payload — better to just omit it than let a bad URL silently kill
+    # every alert (this exact bug happened once already).
+    if url and (url.startswith("http://") or url.startswith("https://")):
+        embed["url"] = url
+    else:
+        # Still surface the link somewhere even if it's not embed-url-valid.
+        embed["fields"].append({"name": "Link", "value": url or "(no URL available)"})
+
     if image_url:
         embed["thumbnail"] = {"url": image_url}
 
-    mentions = []
-    if mention_everyone:
-        mentions.append("@everyone")
-    if mention_role_id:
-        mentions.append(f"<@&{mention_role_id}>")
-    content = " ".join(mentions) if mentions else None
-
     payload = {
-        "content": content,
+        "content": f"<@&{mention_role_id}>" if mention_role_id else None,
         "embeds": [embed],
-        # Discord webhooks silently swallow @everyone/@here unless you
-        # explicitly allow them here — content alone isn't enough.
-        "allowed_mentions": {
-            "parse": (["everyone"] if mention_everyone else []) + (["roles"] if mention_role_id else []),
-        },
     }
 
     resp = requests.post(webhook_url, json=payload, timeout=15)
