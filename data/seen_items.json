@@ -1,7 +1,5 @@
 {
   "Destined Rivals ETB": [
-    "vinted-10365161120",
-    "vinted-10365109481",
     "vinted-10365106151",
     "vinted-10365346213",
     "vinted-10365550640",
@@ -799,10 +797,11 @@
     "vinted-10448475035",
     "vinted-10448470070",
     "vinted-10448461741",
-    "vinted-10448456821"
+    "vinted-10448456821",
+    "vinted-10448627934",
+    "vinted-10448593024"
   ],
   "Destined Rivals Booster Box": [
-    "vinted-10038400563",
     "vinted-10038276764",
     "vinted-10037377633",
     "vinted-10036985829",
@@ -1601,11 +1600,10 @@
     "vinted-10447522090",
     "vinted-10447822378",
     "vinted-10447782786",
-    "vinted-10448593024"
+    "vinted-10448593024",
+    "vinted-10448627934"
   ],
   "Prismatic Evolutions ETB": [
-    "vinted-10292491835",
-    "vinted-10292814800",
     "vinted-10292885467",
     "vinted-10293149943",
     "vinted-10294000181",
@@ -2403,7 +2401,9 @@
     "vinted-10447895547",
     "vinted-10448220699",
     "vinted-10448529767",
-    "vinted-10448494452"
+    "vinted-10448494452",
+    "vinted-10448646869",
+    "vinted-10448605384"
   ],
   "Prismatic Evolutions SPC": [
     "vinted-10164661856",
@@ -3208,9 +3208,6 @@
     "vinted-10448256609"
   ],
   "Ascended Heroes ETB": [
-    "vinted-10324499247",
-    "vinted-10324636036",
-    "vinted-10324745700",
     "vinted-10325719640",
     "vinted-10326190366",
     "vinted-10326314408",
@@ -4007,6 +4004,9 @@
     "vinted-10445914522",
     "vinted-10448226431",
     "vinted-10448293014",
-    "vinted-10448531065"
+    "vinted-10448531065",
+    "vinted-10448639251",
+    "vinted-10448627934",
+    "vinted-10448407459"
   ]
 }
