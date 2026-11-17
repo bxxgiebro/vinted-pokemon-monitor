@@ -1604,7 +1604,6 @@
     "vinted-10855168840"
   ],
   "Prismatic Evolutions ETB": [
-    "vinted-10542005440",
     "vinted-10542185593",
     "vinted-10542396220",
     "vinted-10542362360",
@@ -2403,7 +2402,8 @@
     "vinted-10853913230",
     "vinted-10853746301",
     "vinted-10845244080",
-    "vinted-10854698399"
+    "vinted-10854698399",
+    "vinted-10855191100"
   ],
   "Prismatic Evolutions SPC": [
     "vinted-10345016998",
@@ -3208,10 +3208,6 @@
     "vinted-10311712900"
   ],
   "Ascended Heroes ETB": [
-    "vinted-10729389057",
-    "vinted-10729377292",
-    "vinted-10729413681",
-    "vinted-10729413710",
     "vinted-10730548530",
     "vinted-10731345041",
     "vinted-10731331158",
@@ -4007,6 +4003,10 @@
     "vinted-10855057955",
     "vinted-10855175495",
     "vinted-10855151594",
-    "vinted-10855128287"
+    "vinted-10855128287",
+    "vinted-10855246793",
+    "vinted-10855223025",
+    "vinted-10855199073",
+    "vinted-10855191100"
   ]
 }
